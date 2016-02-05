@@ -22,10 +22,22 @@ def max_valid_s(r,c):
     while ( is_valid_sq(r,c,s) ) : s+=1
     return s-1
 
+def max_valid_horizontal_line(r,c):
+    r2,c2=r,c
+    while ( 0<=c2<=M-1 and img[r2][c2]=='#' ): c2+=1
+    return r2,c2-1
+
 def max_valid_vertical_line(r,c):
     r2,c2=r,c
-    while ( img[r2][c2]=='#' ): c2+=1
-    return r2,c2-1
+    while ( 0<=r2<=N-1 and img[r2][c2]=='#' ): r2+=1
+    return r2-1,c2
+
+def max_valid_line(r,c):
+    r2,c2=r,c
+    while ( 0<=r2<=N-1 and img[r2][c]=='#' ): r2+=1
+    while ( 0<=c2<=M-1 and img[r][c2]=='#' ): c2+=1
+    if r2-r > c2-c: return r2-1,c  
+    else: return r,c2-1
 
 def mark_sq(r,c,s):
     for i in xrange(r-s, r+s+1):
@@ -55,17 +67,49 @@ def greedy_sq():
         mark_sq(r,c,s)
         res.append( cmd )
 
+def greedy_horizontal_line():
+    pq = Queue.PriorityQueue() 
+    for r in xrange(N):
+        for c in xrange(M):
+            char = img[r][c]
+            if char=='#': 
+                r2,c2 = max_valid_horizontal_line(r,c)
+                cmd = "PAINT_LINE %d %d %d %d" % (r,c,r2,c2)
+                pq.put( (c-c2,r,c,r2,c2,cmd) ) 
+            else: pass
+    while not pq.empty():
+        _,r,c,r2,c2,cmd = pq.get()
+        if marked[r][c]: continue
+        mark_line(r,c,r2,c2)
+        res.append( cmd )
+
 def greedy_vertical_line():
-    pq = Queue.PriorityQueue() # maxpq: squares with largest `s` is on top
+    pq = Queue.PriorityQueue() 
     for r in xrange(N):
         for c in xrange(M):
             char = img[r][c]
             if char=='#': 
                 r2,c2 = max_valid_vertical_line(r,c)
                 cmd = "PAINT_LINE %d %d %d %d" % (r,c,r2,c2)
-                pq.put( (c-c2,r,c,r2,c2,cmd) ) 
+                pq.put( (r-r2,r,c,r2,c2,cmd) ) 
             else: pass
-    
+    while not pq.empty():
+        _,r,c,r2,c2,cmd = pq.get()
+        if marked[r][c]: continue
+        mark_line(r,c,r2,c2)
+        res.append( cmd )
+
+def greedy_line():
+    pq = Queue.PriorityQueue() 
+    for r in xrange(N):
+        for c in xrange(M):
+            char = img[r][c]
+            if char=='#': 
+                r2,c2 = max_valid_line(r,c)
+                l = max(r2-r, c2-c)
+                cmd = "PAINT_LINE %d %d %d %d" % (r,c,r2,c2)
+                pq.put( (-l,r,c,r2,c2,cmd) ) 
+            else: pass
     while not pq.empty():
         _,r,c,r2,c2,cmd = pq.get()
         if marked[r][c]: continue
@@ -73,7 +117,9 @@ def greedy_vertical_line():
         res.append( cmd )
 
 #~ greedy_sq()
-greedy_vertical_line()
+#~ greedy_horizontal_line()
+#~ greedy_vertical_line()
+greedy_line()
 
 print len(res)
 for cmd in res: 
