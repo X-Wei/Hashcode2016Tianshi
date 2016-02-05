@@ -101,7 +101,7 @@ def greedy_line_and_sq():
             if char=='#': 
                 s = max_valid_s(r,c)
                 if s==0: continue
-                area = (s*2+1)**2
+                area = (s*2)**2-s*2 # the trick is here to tune the prority for squares....
                 cmd = "PAINT_SQUARE %d %d %d" % (r,c,s)
                 pq.put( (-area,s,r,c,cmd) ) 
             else: pass
