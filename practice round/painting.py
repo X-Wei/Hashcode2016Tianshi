@@ -67,38 +67,6 @@ def greedy_sq():
         mark_sq(r,c,s)
         res.append( cmd )
 
-def greedy_horizontal_line():
-    pq = Queue.PriorityQueue() 
-    for r in xrange(N):
-        for c in xrange(M):
-            char = img[r][c]
-            if char=='#': 
-                r2,c2 = max_valid_horizontal_line(r,c)
-                cmd = "PAINT_LINE %d %d %d %d" % (r,c,r2,c2)
-                pq.put( (c-c2,r,c,r2,c2,cmd) ) 
-            else: pass
-    while not pq.empty():
-        _,r,c,r2,c2,cmd = pq.get()
-        if marked[r][c]: continue
-        mark_line(r,c,r2,c2)
-        res.append( cmd )
-
-def greedy_vertical_line():
-    pq = Queue.PriorityQueue() 
-    for r in xrange(N):
-        for c in xrange(M):
-            char = img[r][c]
-            if char=='#': 
-                r2,c2 = max_valid_vertical_line(r,c)
-                cmd = "PAINT_LINE %d %d %d %d" % (r,c,r2,c2)
-                pq.put( (r-r2,r,c,r2,c2,cmd) ) 
-            else: pass
-    while not pq.empty():
-        _,r,c,r2,c2,cmd = pq.get()
-        if marked[r][c]: continue
-        mark_line(r,c,r2,c2)
-        res.append( cmd )
-
 def greedy_line():
     pq = Queue.PriorityQueue() 
     for r in xrange(N):
@@ -116,10 +84,42 @@ def greedy_line():
         mark_line(r,c,r2,c2)
         res.append( cmd )
 
+def greedy_line_and_sq():
+    pq = Queue.PriorityQueue() 
+    for r in xrange(N):
+        for c in xrange(M):
+            char = img[r][c]
+            if char=='#': 
+                r2,c2 = max_valid_line(r,c)
+                l = max(r2-r, c2-c)+1
+                cmd = "PAINT_LINE %d %d %d %d" % (r,c,r2,c2)
+                pq.put( (-l,r,c,r2,c2,cmd) ) 
+            else: pass
+    for r in xrange(N):
+        for c in xrange(M):
+            char = img[r][c]
+            if char=='#': 
+                s = max_valid_s(r,c)
+                if s==0: continue
+                area = (s*2+1)**2
+                cmd = "PAINT_SQUARE %d %d %d" % (r,c,s)
+                pq.put( (-area,s,r,c,cmd) ) 
+            else: pass
+    while not pq.empty():
+        item = pq.get()
+        if len(item)==5:
+            _,s,r,c,cmd = item
+            if marked[r][c]: continue
+            mark_sq(r,c,s)
+        else:
+            _,r,c,r2,c2,cmd = item
+            if marked[r][c]: continue
+            mark_line(r,c,r2,c2)
+        res.append( cmd )
+
 #~ greedy_sq()
-#~ greedy_horizontal_line()
-#~ greedy_vertical_line()
-greedy_line()
+#~ greedy_line()
+greedy_line_and_sq()
 
 print len(res)
 for cmd in res: 
