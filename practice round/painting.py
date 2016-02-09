@@ -1,13 +1,5 @@
-import sys
+from read_input import * 
 import Queue
-#~ filename,comment = sys.argv[1:3]
-
-N,M = map( int, raw_input().split() )
-img = [] # array of string (each line)
-res = [] # instructions
-marked = [ [False for i in xrange(M)] for j in xrange(N)]
-for line in sys.stdin:
-    img.append(line)
 
 def max_valid_s(r,c):
     def is_valid_sq(r,c,s):
