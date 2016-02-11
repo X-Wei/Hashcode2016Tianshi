@@ -1,6 +1,3 @@
-import sys
-
-# these are the global variables that can be used in painting.py
 Rows, Cols, D, T, MaxLoad = map(int , raw_input().split() )
 
 P = int(raw_input()) # nb of product types
@@ -19,7 +16,7 @@ C = int(raw_input()) # nb of orders
 order = []  # order[i] = (r,c), the location of destination of order i, i=0..C-1
 demand = [] # demand[i][p] is the number of product-p for order i, i=0..C-1
 from collections import Counter
-for _ in xrange(W):
+for _ in xrange(C):
     r,c = map(int , raw_input().split() )
     order.append( (r,c) )
     Li = int(raw_input())
