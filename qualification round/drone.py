@@ -49,62 +49,85 @@ def nearest_wh(od, p): # find the nearest warehouse that have the required nb of
     min_d = 999999999
     res = -1 # if no sigle wh can satisfy this demand, return -1
     for i in xrange(W):
-        if stock[i][p]<od.dmd[p]: continue
+        if stock[i][p]<od.dmd[p]: continue # first want a WH that can satisfy the demand on its own
         d = dist(warehouse[i], od.coord)
         if d<min_d: 
             min_d=d
             res = i
-    return res
+    if res!=-1: return res, od.dmd[p]
+    # if such WH do not exists -- find one that have the most nb of prod-p
+    max_nb,min_d = -1, 999999999
+    for i in xrange(W):
+        if stock[i][p]==0: continue 
+        if stock[i][p]==max_nb: # if nb are the same --> take the nearer one
+            d = dist(warehouse[i], od.coord)
+            if d<min_d: 
+                res = i
+                min_d = d
+        elif stock[i][p]>max_nb: 
+            max_nb = stock[i][p]
+            res = i
+            min_d = dist(warehouse[i], od.coord)
+    return res, max_nb
 
-def nearest_drone(od, p, wh): # find the nearest drone that can carry prod-p from warehouse wh
+def nearest_drone(wh, p, n): # find the nearest drone that can carry `n` itmes of prod-p from warehouse `wh`
     min_d = 999999999
     res = -1 # if no sigle drone can satisfy this demand, return -1
     for i in xrange(D):
-        dr = drones[i]
-        if MaxLoad-dr.load < od.dmd[p]: continue
+        dr = drones[i]# first want a drone that can satisfy the demand on its own
+        if MaxLoad-dr.load < n*weight[p]: continue
         d = dist(warehouse[wh], dr.coord)
         if d<min_d: 
             min_d=d
             res = i
-    return res
-
+    if res!=-1: return res, n
+    # if such drone do not exists -- find one that have the most capacity
+    max_cap,min_d = -1, 999999999
+    for i in xrange(W):
+        dr = drones[i]
+        cap = (MaxLoad-dr.load)//weight[p]
+        if cap: continue 
+        if cap==max_cap: # if capacities are the same --> take the nearer one
+            d = dist(warehouse[wh], dr.coord)
+            if d<min_d: 
+                res = i
+                min_d = d
+        elif cap>max_cap: 
+            max_cap = cap
+            res = i
+            min_d = dist(warehouse[wh], dr.coord)
+    return res, max_cap
+    
 
 commands = [] # list of instructions
 while not pq_orders.empty(): # treat orders one by one
-    od = pq_orders.get()
-    success = True # indicates whether this order is satisfied or not 
+    od = pq_orders.get() # satisfy order `od`
     cmds = []
     for p in xrange(P): # satisfy demand for product-p
-        if od.dmd[p]==0: 
-            success = False
-            break
-        wh_id = nearest_wh(od, p)
-        if wh_id==-1: # if cannot find such a wh --> just ignore this order
-            success = False
-            break
-        dr_id = nearest_drone(od, p, wh_id)
-        if dr_id==-1: continue
-        cmd = '%d L %d %d %d' % (dr_id, wh_id, p, od.dmd[p]) # load
-        cmds.append(cmd)
-        dr = dr = drones[dr_id]
-        dr.cargo[p] = od.dmd[p]
-        dr.load += od.dmd[p]*weight[p]
-        dr.coord = (warehouse[wh_id])
-    if success==False: # treat next order if this order cannot be satisfied (TODO: didn't track back!)
-        continue 
-    for dr_id in xrange(D):
-        if dr.load==0: continue
-        for p in xrange(P):
-            if dr.cargo[p]==0: continue
-            cmd = '%d D %d %d %d' % (dr_id, od.id, p, dr.cargo[p]) # deliver
-            cmds.append(cmd)
-    commands.extend(cmds)
+        while od.dmd[p]>0:
+            wh_id,nb = nearest_wh(od, p)
+            while nb>0: 
+                dr_id, nb_i = nearest_drone(wh_id, p, nb)
+                nb -= nb_i
+                od.dmd[p] -= nb_i
+                stock[wh_id][p] -= nb_i
+                dr = drones[dr_id]
+                dr.cargo[p] += nb_i
+                dr.load += nb_i*weight[p]
+                dr.coord = warehouse[wh_id]
+                cmd = '%d L %d %d %d' % (dr_id, wh_id, p, nb_i) # load
+                cmds.append(cmd)
+        # now all demand product-p are loaded on drones: deliver!
+        for dr_id in xrange(D):
+            dr = drones[dr_id]
+            if dr.load==0: continue
+            for p in xrange(P):
+                if dr.cargo[p]==0: continue
+                cmd = '%d D %d %d %d' % (dr_id, od.id, p, dr.cargo[p]) # deliver
+                cmds.append(cmd)
+        # satisfy demand for product-p
+    commands.extend(cmds) # satisfy order `od`
 
 print len(commands)
 for cmd in commands:
     print cmd
-
-
-
-    
-
