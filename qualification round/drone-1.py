@@ -100,43 +100,55 @@ def nearest_drone(wh, p, n): # find the nearest drone that can carry `n` itmes o
             res = i
             min_d = dist(warehouse[wh], dr.coord)
     return res, max_cap
-    
+
+def all_drone_full():
+    for dr in drones: 
+        if dr.load<MaxLoad: return False
+    return True
 
 commands = [] # list of instructions
+cmds = []
+
+def deliver_drones():
+    for dr_id in xrange(D):
+        dr = drones[dr_id]
+        if dr.load==0: continue
+        for p in xrange(P):
+            if dr.cargo[p]==0: continue
+            cmd = '%d D %d %d %d' % (dr_id, od.id, p, dr.cargo[p]) # deliver
+            cmds.append(cmd)
+            dst = dist(dr.coord, od.coord)
+            times[dr_id] += (dst+1)
+            dr.load -= dr.cargo[p]*weight[p]
+            dr.cargo[p] = 0
+            dr.coord = od.coord
+
 while not pq_orders.empty(): # treat orders one by one
     #~ print od.id
     od = pq_orders.get() # satisfy order `od`
-    cmds = []
     for p in xrange(P): # satisfy demand for product-p
         while od.dmd[p]>0:
             wh_id,nb = nearest_wh(od, p)
             while nb>0: 
                 dr_id, nb_i = nearest_drone(wh_id, p, nb)
-                dr = drones[dr_id]
-                dst = dist(dr.coord, warehouse[wh_id])
-                times[dr_id] += (dst+1)
-                nb -= nb_i
-                od.dmd[p] -= nb_i
-                stock[wh_id][p] -= nb_i
-                dr.cargo[p] += nb_i
-                dr.load += nb_i*weight[p]
-                dr.coord = warehouse[wh_id]
-                cmd = '%d L %d %d %d' % (dr_id, wh_id, p, nb_i) # load
-                cmds.append(cmd)
-        # now all demand product-p are loaded on drones: deliver!
-        for dr_id in xrange(D):
-            dr = drones[dr_id]
-            if dr.load==0: continue
-            for p in xrange(P):
-                if dr.cargo[p]==0: continue
-                cmd = '%d D %d %d %d' % (dr_id, od.id, p, dr.cargo[p]) # deliver
-                cmds.append(cmd)
-                dst = dist(dr.coord, od.coord)
-                times[dr_id] += (dst+1)
-                dr.load -= dr.cargo[p]*weight[p]
-                dr.cargo[p] = 0
-                dr.coord = od.coord
+                if dr_id==-1: 
+                    deliver_drones()
+                else: 
+                    dr = drones[dr_id]
+                    dst = dist(dr.coord, warehouse[wh_id])
+                    times[dr_id] += (dst+1)
+                    nb -= nb_i
+                    od.dmd[p] -= nb_i
+                    stock[wh_id][p] -= nb_i
+                    dr.cargo[p] += nb_i
+                    dr.load += nb_i*weight[p]
+                    dr.coord = warehouse[wh_id]
+                    cmd = '%d L %d %d %d' % (dr_id, wh_id, p, nb_i) # load to drones
+                    cmds.append(cmd)
         # satisfy demand for product-p
+        #~ if all_drone_full()==False: continue # load drones as long as we can
+    deliver_drones()
+        
     if max(times)>T: break
     commands.extend(cmds) # satisfy order `od`
 
