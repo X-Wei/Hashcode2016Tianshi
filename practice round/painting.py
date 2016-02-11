@@ -66,8 +66,7 @@ def greedy_line():
         for c in xrange(M):
             char = img[r][c]
             if char=='#': 
-                r2,c2 = max_valid_line(r,c)
-                l = max(r2-r, c2-c)
+                r2,c2,l = max_valid_line(r,c)
                 cmd = "PAINT_LINE %d %d %d %d" % (r,c,r2,c2)
                 pq.put( (-l,r,c,r2,c2,cmd) ) 
             else: pass
@@ -121,11 +120,11 @@ def greedy_line_and_sq():
                 mark_line(r,c,r2,c2)
                 res.append( cmd )
             else: pq.put( (-newp,r,c,r2,c2,cmd) )
-        
+
 
 #~ greedy_sq()
-#~ greedy_line()
-greedy_line_and_sq()
+greedy_line()
+#~ greedy_line_and_sq()
 
 print len(res)
 for cmd in res: 
