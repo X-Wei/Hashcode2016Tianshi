@@ -131,7 +131,7 @@ while not pq_orders.empty(): # treat orders one by one
                 dr.coord = od.coord
         # satisfy demand for product-p
     commands.extend(cmds) # satisfy order `od`
-    if len(commands)>2800: break
+    if len(commands)>6000: break
 
 print len(commands)
 for cmd in commands:

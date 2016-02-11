@@ -37,7 +37,7 @@ class Drone:
 
 r0,c0 = warehouse[0]
 drones = [ Drone(r0,c0,0) for _ in xrange(D) ]
-
+times = [0 for _ in xrange(D)] # time used by drone
 orders = []
 for i in xrange(C):
     r,c = order[i]
@@ -112,10 +112,12 @@ while not pq_orders.empty(): # treat orders one by one
             wh_id,nb = nearest_wh(od, p)
             while nb>0: 
                 dr_id, nb_i = nearest_drone(wh_id, p, nb)
+                dr = drones[dr_id]
+                dst = dist(dr.coord, warehouse[wh_id])
+                times[dr_id] += (dst+1)
                 nb -= nb_i
                 od.dmd[p] -= nb_i
                 stock[wh_id][p] -= nb_i
-                dr = drones[dr_id]
                 dr.cargo[p] += nb_i
                 dr.load += nb_i*weight[p]
                 dr.coord = warehouse[wh_id]
@@ -129,12 +131,15 @@ while not pq_orders.empty(): # treat orders one by one
                 if dr.cargo[p]==0: continue
                 cmd = '%d D %d %d %d' % (dr_id, od.id, p, dr.cargo[p]) # deliver
                 cmds.append(cmd)
+                dst = dist(dr.coord, od.coord)
+                times[dr_id] += (dst+1)
                 dr.load -= dr.cargo[p]*weight[p]
                 dr.cargo[p] = 0
                 dr.coord = od.coord
         # satisfy demand for product-p
+    if max(times)>T: break
     commands.extend(cmds) # satisfy order `od`
-    if len(commands)>2800: break
+
 
 print len(commands)
 for cmd in commands:
