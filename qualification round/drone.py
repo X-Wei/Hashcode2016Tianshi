@@ -101,6 +101,7 @@ def nearest_drone(wh, p, n): # find the nearest drone that can carry `n` itmes o
 
 commands = [] # list of instructions
 while not pq_orders.empty(): # treat orders one by one
+    #~ print od.id
     od = pq_orders.get() # satisfy order `od`
     cmds = []
     for p in xrange(P): # satisfy demand for product-p
@@ -127,6 +128,7 @@ while not pq_orders.empty(): # treat orders one by one
                 cmds.append(cmd)
         # satisfy demand for product-p
     commands.extend(cmds) # satisfy order `od`
+    if len(commands)>10000: break
 
 print len(commands)
 for cmd in commands:
