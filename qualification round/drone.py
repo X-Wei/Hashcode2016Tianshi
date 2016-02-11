@@ -126,6 +126,9 @@ while not pq_orders.empty(): # treat orders one by one
                 if dr.cargo[p]==0: continue
                 cmd = '%d D %d %d %d' % (dr_id, od.id, p, dr.cargo[p]) # deliver
                 cmds.append(cmd)
+                dr.load -= dr.cargo[p]*weight[p]
+                dr.cargo[p] = 0
+                dr.coord = od.coord
         # satisfy demand for product-p
     commands.extend(cmds) # satisfy order `od`
     if len(commands)>10000: break
