@@ -125,6 +125,7 @@ def deliver_drones(od):
 
 while not pq_orders.empty(): # treat orders one by one
     #~ print od.id
+    cmds = []
     od = pq_orders.get() # satisfy order `od`
     for p in xrange(P): # satisfy demand for product-p
         while od.dmd[p]>0:
@@ -148,7 +149,7 @@ while not pq_orders.empty(): # treat orders one by one
         # satisfy demand for product-p
         #~ if all_drone_full()==False: continue # load drones as long as we can
     deliver_drones(od)
-    if max(times)>T: break
+    if max(times)>T or len(commands)>6000: break
     commands.extend(cmds) # satisfy order `od`
 
 
