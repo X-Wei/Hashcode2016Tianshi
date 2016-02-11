@@ -109,7 +109,7 @@ def all_drone_full():
 commands = [] # list of instructions
 cmds = []
 
-def deliver_drones():
+def deliver_drones(od):
     for dr_id in xrange(D):
         dr = drones[dr_id]
         if dr.load==0: continue
@@ -132,7 +132,7 @@ while not pq_orders.empty(): # treat orders one by one
             while nb>0: 
                 dr_id, nb_i = nearest_drone(wh_id, p, nb)
                 if dr_id==-1: 
-                    deliver_drones()
+                    deliver_drones(od)
                 else: 
                     dr = drones[dr_id]
                     dst = dist(dr.coord, warehouse[wh_id])
@@ -147,8 +147,7 @@ while not pq_orders.empty(): # treat orders one by one
                     cmds.append(cmd)
         # satisfy demand for product-p
         #~ if all_drone_full()==False: continue # load drones as long as we can
-    deliver_drones()
-        
+    deliver_drones(od)
     if max(times)>T: break
     commands.extend(cmds) # satisfy order `od`
 
