@@ -19,11 +19,14 @@ class Order:
     def nb_types(self): # return the nb of product types of this order
         return sum([1 if dmdi!=0 else 0 for dmdi in self.dmd ])
     def total_weight(self): # return total weight
-        return sum(self.dmd)
+        return sum([self.dmd[i]*weight[i] for i in xrange(P)])
     def __cmp__(self, other):# self-defined compare: first compare by nb_types(), if equal, compare order_weight()
         nt1,nt2 = self.nb_types(), other.nb_types()
-        if nt1!=nt2: return nt1-nt2
-        else: return self.total_weight() - other.total_weight()
+        tw1, tw2 = self.total_weight(), other.total_weight()
+        #~ if nt1!=nt2: return nt1-nt2
+        #~ else: return tw1-tw2
+        if tw1!=tw2: return tw1-tw2
+        return nt1-nt2
 
 class Drone:
     def __init__(self, r, c, w):
