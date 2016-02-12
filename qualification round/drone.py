@@ -41,14 +41,12 @@ r0,c0 = warehouse[0]
 drones = [ Drone(r0,c0,0) for _ in xrange(D) ]
 times = [0 for _ in xrange(D)] # time used by drone
 orders = []
-for i in xrange(C):
-    r,c = order[i]
-    orders.append( Order(i,r,c,demand[i]) )
-
 from Queue import PriorityQueue
 pq_orders = PriorityQueue()
-for od in orders: 
-    pq_orders.put(od) # the order with least nb of types is on top of pq
+for i in xrange(C):
+    r,c = order[i]
+    pq_orders.put( Order(i,r,c,demand[i]) ) # the order with least nb of types is on top of pq
+
 
 def nearest_wh(od, p): # find the nearest warehouse that have product-p for order `od`
     min_d = 999999999
@@ -99,35 +97,30 @@ def nearest_drone(wh, p, n): # find the nearest drone that can carry `n` itmes o
             min_d=d
             res = i
     if res!=-1: return res, n
-    # if such drone do not exists -- find one that have the most capacity
+    # if such drone do not exist -- find one that have the most capacity/min priority
     max_cap,min_priority = -1, 999999999
     for i in xrange(D):
         dr = drones[i]
         cap = (MaxLoad-dr.load)//weight[p]
         if cap==0: continue # UN BUG CON...
         priority = dist(warehouse[wh], dr.coord)+times[i] # !!!the priority should be time[i]+distance!!!
-        if priority==min_priority: # if have same priority --> take larger capacity
-            if cap>max_cap: 
-                res = i
-                max_cap = cap
-        elif priority<min_priority: 
-            min_priority = priority
-            max_cap = cap
-            res = i
-        #~ if cap==max_cap: # if capacities are the same --> take the one with smaller priority
-            #~ if priority<min_priority: 
+        #~ if priority==min_priority: # if have same priority --> take larger capacity
+            #~ if cap>max_cap: 
                 #~ res = i
-                #~ min_priority = priority
-        #~ elif cap>max_cap: 
+                #~ max_cap = cap
+        #~ elif priority<min_priority: 
+            #~ min_priority = priority
             #~ max_cap = cap
             #~ res = i
-            #~ min_priority = priority
+        if cap==max_cap: # if capacities are the same --> take the one with smaller priority
+            if priority<min_priority: 
+                res = i
+                min_priority = priority
+        elif cap>max_cap: 
+            max_cap = cap
+            res = i
+            min_priority = priority
     return res, max_cap
-
-def all_drone_full():
-    for dr in drones: 
-        if dr.load<MaxLoad: return False
-    return True
 
 commands = [] # list of instructions
 cmds = []
@@ -172,9 +165,8 @@ while not pq_orders.empty(): # treat orders one by one
                     cmd = '%d L %d %d %d' % (dr_id, wh_id, p, nb_i) # load to drones
                     cmds.append(cmd)
         # satisfy demand for product-p
-    #~ deliver_drones()
-    if max(times)>T : break # 
-    commands.extend(cmds) # satisfy order `od`
+    if max(times)>T : break 
+    commands.extend(cmds) 
 
 
 print len(commands)
