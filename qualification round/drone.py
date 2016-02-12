@@ -1,144 +1,105 @@
 from read_input import *
-from math import sqrt, ceil
 ''' ***global vars: ***
 Rows, Cols, D, T, MaxLoad
 warehouse(coord), stock
 order(coord), demand
+drones, times
+pq_orders
 '''
-def dist(a,b):
-    r1,c1 = a
-    r2,c2 = b
-    return  ceil( sqrt((r1-r2)**2+(c1-c2)**2) )
-
-class Order: 
-    def __init__(self, _id, r, c, demand_i):
-        self.id = _id
-        self.r, self.c = r, c # location of order
-        self.coord = (r,c)
-        self.dmd = demand_i # dmd[p] is the number of required product-p for order i, i=0..C-1
-    def nb_types(self): # return the nb of product types of this order
-        return sum([1 if dmdi!=0 else 0 for dmdi in self.dmd ])
-    def total_weight(self): # return total weight
-        return sum([self.dmd[i]*weight[i] for i in xrange(P)])
-    def __cmp__(self, other):# self-defined compare: first compare by nb_types(), if equal, compare order_weight()
-        #~ if self.r!=other.r: return self.r-other.r
-        #~ else: return self.c-other.c
-        nt1,nt2 = self.nb_types(), other.nb_types()
-        tw1, tw2 = self.total_weight(), other.total_weight()
-        #~ if nt1!=nt2: return nt1-nt2
-        #~ else: return tw1-tw2
-        if tw1!=tw2: return tw1-tw2
-        return nt1-nt2
-
-class Drone:
-    def __init__(self, r, c, w):
-        self.r, self.c = r, c # location of drone
-        self.coord = (r,c)
-        self.load = w # the weight that is already on the drone
-        self.cargo = [ {} for i in xrange(C)] # cargo[i] is a map: mapping p to the nb of items to send to order i
-
-r0,c0 = warehouse[0]
-drones = [ Drone(r0,c0,0) for _ in xrange(D) ]
-times = [0 for _ in xrange(D)] # time used by drone
-orders = []
-from Queue import PriorityQueue
-pq_orders = PriorityQueue()
-for i in xrange(C):
-    r,c = order[i]
-    pq_orders.put( Order(i,r,c,demand[i]) ) # the order with least nb of types is on top of pq
-
 
 def nearest_wh(od, p): # find the nearest warehouse that have product-p for order `od`
     min_d = 999999999
     res = -1 # if no sigle wh can satisfy this demand, return -1
-    for i in xrange(W):
-        if stock[i][p]<od.dmd[p]: continue # first want a WH that can satisfy the demand on its own
-        d = dist(warehouse[i], od.coord)
+    for w in xrange(W):
+        if stock[w][p]<od.dmd[p]: continue # first want a WH that can satisfy the demand on its own
+        d = dist(warehouse[w], od.coord)
         if d<min_d: 
             min_d=d
-            res = i
+            res = w
     if res!=-1: return res, od.dmd[p]
-    # if such WH do not exists -- find one that have the most nb of prod-p
-    max_nb,min_d = -1, 999999999
-    for i in xrange(W):
-        if stock[i][p]==0: continue 
-        if stock[i][p]==max_nb: # if nb are the same --> take the nearer one
-            d = dist(warehouse[i], od.coord)
-            if d<min_d: 
-                res = i
-                min_d = d
-        elif stock[i][p]>max_nb: 
+    max_nb,min_d = -1, 999999999 # if such WH do not exists -- find one that have the most nb of prod-p
+    for w in xrange(W):
+        if stock[w][p]==0: continue 
+        if stock[w][p]==max_nb: # if nb are the same --> take the nearer one
+            dst = dist(warehouse[w], od.coord)
+            if dst<min_d: 
+                res = w
+                min_d = dst
+        elif stock[w][p]>max_nb: 
             max_nb = stock[i][p]
-            res = i
-            min_d = dist(warehouse[i], od.coord)
+            res = w
+            min_d = dist(warehouse[w], od.coord)
     return res, max_nb
 
-def nearest_drone(wh, p, n): # find the nearest drone that can carry `n` itmes of prod-p from warehouse `wh`
+def nearest_drone(w, p, n): # find the nearest drone that can carry `n` itmes of prod-p from warehouse `w`
     min_d = 999999999
     res = -1 # if no sigle drone can satisfy this demand, return -1
     # first: find the drones that have ***dist==0***
     max_cap = -1
-    for i in xrange(D):
-        dr = drones[i]
+    for d in xrange(D):
+        dr = drones[d]
         cap = (MaxLoad-dr.load)//weight[p]
         if cap==0: continue 
-        d = dist(warehouse[wh], dr.coord)
+        dst = dist(warehouse[w], dr.coord)
         if dist>0: continue
         if cap>max_cap: 
             max_cap = cap
-            res = i
+            res = d
     if res!=-1: return res, min(max_cap,n)
     # second: want a drone that can satisfy the demand on its own
-    for i in xrange(D):
-        dr = drones[i]
+    for d in xrange(D):
+        dr = drones[d]
         if MaxLoad-dr.load < n*weight[p]: continue
-        d = dist(warehouse[wh], dr.coord)
-        if d<min_d: 
-            min_d=d
-            res = i
+        dst = dist(warehouse[w], dr.coord)
+        if dst<min_d: 
+            min_d=dst
+            res = d
     if res!=-1: return res, n
     # if such drone do not exist -- find one that have the most capacity/min priority
     max_cap,min_priority = -1, 999999999
-    for i in xrange(D):
-        dr = drones[i]
+    for d in xrange(D):
+        dr = drones[d]
         cap = (MaxLoad-dr.load)//weight[p]
         if cap==0: continue # UN BUG CON...
-        priority = dist(warehouse[wh], dr.coord)+times[i] # !!!the priority should be time[i]+distance!!!
-        #~ if priority==min_priority: # if have same priority --> take larger capacity
-            #~ if cap>max_cap: 
-                #~ res = i
-                #~ max_cap = cap
-        #~ elif priority<min_priority: 
-            #~ min_priority = priority
-            #~ max_cap = cap
-            #~ res = i
-        if cap==max_cap: # if capacities are the same --> take the one with smaller priority
-            if priority<min_priority: 
-                res = i
-                min_priority = priority
-        elif cap>max_cap: 
-            max_cap = cap
-            res = i
+        priority = dist(warehouse[w], dr.coord)+times[d] # !!!the priority should be time[i]+distance!!!
+        if priority==min_priority: # if have same priority --> take larger capacity
+            if cap>max_cap: 
+                res = d
+                max_cap = cap
+        elif priority<min_priority: 
             min_priority = priority
+            max_cap = cap
+            res = d
+        #~ if cap==max_cap: # if capacities are the same --> take the one with smaller priority
+            #~ if priority<min_priority: 
+                #~ res = d
+                #~ min_priority = priority
+        #~ elif cap>max_cap: 
+            #~ max_cap = cap
+            #~ res = d
+            #~ min_priority = priority
     return res, max_cap
 
 commands = [] # list of instructions
 cmds = []
 
 def deliver_drones():
-    for dr_id in xrange(D):
-        dr = drones[dr_id]
+    for d in xrange(D):
+        dr = drones[d]
         if dr.load==0: continue
-        for od_id in xrange(C):
-            if len(dr.cargo[od_id])==0: continue # cargo[i] is a map: mapping p to the nb of items to send to order i=cargo[i][p]
-            for p in dr.cargo[od_id]:
-                cmd = '%d D %d %d %d' % (dr_id, od_id, p, dr.cargo[od_id][p]) # deliver product p to order i
+        for o in xrange(C):
+            if len(dr.cargo[o])==0: continue # cargo[o] is a map: mapping p to the nb of items to send to order o=cargo[o][p]
+            for p in dr.cargo[o]:
+                cmd = '%d D %d %d %d' % (d, o, p, dr.cargo[o][p]) # deliver product p to order i
                 cmds.append(cmd)
+                od = all_orders[o]
                 dst = dist(dr.coord, od.coord)
-                times[dr_id] += (dst+1)
-                dr.load -= dr.cargo[od_id][p]*weight[p]
-                dr.coord = order[od_id]
-            dr.cargo[od_id] = {}
+                times[d] += (dst+1)
+                od.cmds.append(cmd)
+                od.finish_time = max(od.finish_time, times[d])
+                dr.load -= dr.cargo[o][p]*weight[p]
+                dr.coord = order[o]
+            dr.cargo[o] = {}
 
 while not pq_orders.empty(): # treat orders one by one
     cmds = []
@@ -147,27 +108,37 @@ while not pq_orders.empty(): # treat orders one by one
     for p in xrange(P): # satisfy demand for product-p
         if od.dmd[p]==0: continue
         while od.dmd[p]>0:
-            wh_id,nb = nearest_wh(od, p)
+            w,nb = nearest_wh(od, p)
             while nb>0: 
-                dr_id, nb_i = nearest_drone(wh_id, p, nb)
-                if dr_id==-1: 
+                d, nb_i = nearest_drone(w, p, nb)
+                if d==-1: 
                     deliver_drones()
                 else: 
-                    dr = drones[dr_id]
-                    dst = dist(dr.coord, warehouse[wh_id])
-                    times[dr_id] += (dst+1)
+                    dr = drones[d]
+                    dst = dist(dr.coord, warehouse[w])
+                    times[d] += (dst+1)
                     nb -= nb_i
                     od.dmd[p] -= nb_i
-                    stock[wh_id][p] -= nb_i
+                    stock[w][p] -= nb_i
                     dr.cargo[od.id][p] = nb_i
                     dr.load += nb_i*weight[p]
-                    dr.coord = warehouse[wh_id]
-                    cmd = '%d L %d %d %d' % (dr_id, wh_id, p, nb_i) # load to drones
+                    dr.coord = warehouse[w]
+                    cmd = '%d L %d %d %d' % (d, w, p, nb_i) # load to drones
+                    od.cmds.append(cmd)
                     cmds.append(cmd)
         # satisfy demand for product-p
-    if max(times)>T : break 
+    #~ if max(times)>T : break 
     commands.extend(cmds) 
 
+#~ import cPickle as pickle
+#~ finish_times = [od.finish_time for od in all_orders] 
+#~ pickle.dump( finish_times, open( "finish_times.pk", "wb" ) )
+
+#~ commands=[]
+#~ for o in xrange(C):
+    #~ od = all_orders[o]
+    #~ if od.finish_time<0 or od.finish_time>T: continue
+    #~ commands.extend(od.cmds)
 
 print len(commands)
 for cmd in commands:
