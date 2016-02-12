@@ -21,19 +21,21 @@ class Order:
     def total_weight(self): # return total weight
         return sum([self.dmd[i]*weight[i] for i in xrange(P)])
     def __cmp__(self, other):# self-defined compare: first compare by nb_types(), if equal, compare order_weight()
+        #~ if self.r!=other.r: return self.r-other.r
+        #~ else: return self.c-other.c
         nt1,nt2 = self.nb_types(), other.nb_types()
         tw1, tw2 = self.total_weight(), other.total_weight()
-        if nt1!=nt2: return nt1-nt2
-        else: return tw1-tw2
-        #~ if tw1!=tw2: return tw1-tw2
-        #~ return nt1-nt2
+        #~ if nt1!=nt2: return nt1-nt2
+        #~ else: return tw1-tw2
+        if tw1!=tw2: return tw1-tw2
+        return nt1-nt2
 
 class Drone:
     def __init__(self, r, c, w):
         self.r, self.c = r, c # location of drone
         self.coord = (r,c)
         self.load = w # the weight that is already on the drone
-        self.cargo = [ [0 for _ in xrange(P)] for i in xrange(C)] # cargo[i][p] is nb of prod-p on drone for order[i]
+        self.cargo = [ {} for i in xrange(C)] # cargo[i] is a map: mapping p to the nb of items to send to order i
 
 r0,c0 = warehouse[0]
 drones = [ Drone(r0,c0,0) for _ in xrange(D) ]
@@ -135,15 +137,15 @@ def deliver_drones():
         dr = drones[dr_id]
         if dr.load==0: continue
         for od_id in xrange(C):
-            for p in xrange(P):
-                if dr.cargo[od_id][p]==0: continue
+            if len(dr.cargo[od_id])==0: continue # cargo[i] is a map: mapping p to the nb of items to send to order i=cargo[i][p]
+            for p in dr.cargo[od_id]:
                 cmd = '%d D %d %d %d' % (dr_id, od_id, p, dr.cargo[od_id][p]) # deliver product p to order i
                 cmds.append(cmd)
                 dst = dist(dr.coord, od.coord)
                 times[dr_id] += (dst+1)
                 dr.load -= dr.cargo[od_id][p]*weight[p]
-                dr.cargo[od_id][p] = 0
                 dr.coord = order[od_id]
+            dr.cargo[od_id] = {}
 
 while not pq_orders.empty(): # treat orders one by one
     cmds = []
@@ -164,7 +166,7 @@ while not pq_orders.empty(): # treat orders one by one
                     nb -= nb_i
                     od.dmd[p] -= nb_i
                     stock[wh_id][p] -= nb_i
-                    dr.cargo[od.id][p] += nb_i
+                    dr.cargo[od.id][p] = nb_i
                     dr.load += nb_i*weight[p]
                     dr.coord = warehouse[wh_id]
                     cmd = '%d L %d %d %d' % (dr_id, wh_id, p, nb_i) # load to drones
