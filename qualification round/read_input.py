@@ -52,6 +52,12 @@ class Order:
         self.dmd = demand_i # dmd[p] is the number of required product-p for order i, i=0..C-1
         self.finish_time = -1
         self.cmds = [] # list of commands for this order
+    def finished(self):
+        return sum(self.dmd)==0
+    def score(self):
+        if self.finished()==False or self.finish_time>T or self.finish_time<0:
+            return 0
+        return ceil( (T-od.finish_time)*100.0/T )
     def nb_types(self): # return the nb of product types of this order
         return sum([1 if dmdi!=0 else 0 for dmdi in self.dmd ])
     def total_weight(self): # return total weight

@@ -73,6 +73,7 @@ def nearest_drone(w, p, n): # find the nearest drone that can carry `n` items of
     # if such drone do not exist -- find one that have the most capacity/min priority
     max_cap, min_priority = -1, 999999999
     for d in xrange(D):
+        if times[d]>T: continue
         dr = drones[d]
         cap = (MaxLoad-dr.load)//weight[p]
         if cap<=0: continue # UN BUG CON...
@@ -106,13 +107,14 @@ def deliver_drones():
         for o in _orders:
             if len(dr.cargo[o])==0: continue # cargo[o] is a map: mapping p to the nb of items to send to order o=cargo[o][p]
             for p in dr.cargo[o]:
-                cmd = '%d D %d %d %d' % (d, o, p, dr.cargo[o][p]) # deliver product p to order i
-                cmds.append(cmd)
                 od = all_orders[o]
                 dst = dist(dr.coord, od.coord)
                 times[d] += (dst+1)
-                od.cmds.append(cmd)
                 od.finish_time = max(od.finish_time, times[d])
+                if times[d]>T: break
+                cmd = '%d D %d %d %d' % (d, o, p, dr.cargo[o][p]) # deliver product p to order i
+                cmds.append(cmd)
+                #~ od.cmds.append(cmd)
                 dr.load -= dr.cargo[o][p]*weight[p]
                 dr.coord = order[o]
             dr.cargo[o] = {}
@@ -129,7 +131,8 @@ while not pq_orders.empty(): # treat orders one by one
             if nb<=0: print 'err: warehouse %d, nb=%d'%(w,nb)
             while nb>0: 
                 d, nb_i = nearest_drone(w, p, nb)
-                if d!=-1 and nb_i<=0: print 'err: nbi=%d'%nb_i
+                if d!=-1 and nb_i<=0: 
+                    print 'err: nbi=%d'%nb_i
                 if d==-1: 
                     deliver_drones()
                 else: 
@@ -150,30 +153,13 @@ while not pq_orders.empty(): # treat orders one by one
     #~ if random() <= sum([1 if dr.load==0 else 0 for dr in drones])*1.0/D:
     if random() <= ( sum([dr.load for dr in drones])*1.0 / (MaxLoad*D) )**0.5:
         deliver_drones()
-    if max(times)>T : break 
+    if min(times)>T : break 
     commands.extend(cmds) 
 
-score = sum( ceil( (T-od.finish_time)*100.0/T ) if T>=od.finish_time>=0 else 0 for od in all_orders)
-print score
+score = sum( od.score() for od in all_orders)
+print int(score)
 
-#~ commands = []
-#~ s = run()
-#~ print s
 print len(commands)
 for cmd in commands:
     print cmd
 
-#~ max_score = -1
-#~ best_commands = []
-#~ for n in xrange(2):
-    #~ catfile = 'cat busy_day.in'
-    #~ 
-    #~ s = run()
-    #~ if s>max_score: 
-        #~ max_score = s
-        #~ best_commands = commands[:]
-#~ 
-#~ print max_score
-#~ print len(best_commands)
-#~ for cmd in best_commands:
-    #~ print cmd
