@@ -57,25 +57,21 @@ class Order:
     def total_weight(self): # return total weight
         return sum([self.dmd[i]*weight[i] for i in xrange(P)])
     def __cmp__(self, other):# self-defined compare: first compare by nb_types(), if equal, compare order_weight()
-        return self.finish_time - other.finish_time
+        #~ return self.finish_time - other.finish_time
         #~ if self.r!=other.r: return self.r-other.r
         #~ else: return self.c-other.c
         nt1,nt2 = self.nb_types(), other.nb_types()
         tw1, tw2 = self.total_weight(), other.total_weight()
-        if nt1!=nt2: return nt1-nt2
-        else: return tw1-tw2
-        #~ if tw1!=tw2: return tw1-tw2
-        #~ else: return nt1-nt2
+        #~ if nt1!=nt2: return nt1-nt2
+        #~ else: return tw1-tw2
+        if tw1!=tw2: return tw1-tw2
+        else: return nt1-nt2
 
 all_orders = []
-import cPickle as pickle
-finish_times = pickle.load( open( "finish_times.pk", "rb" ) )
-
 from Queue import PriorityQueue
 pq_orders = PriorityQueue()
 for i in xrange(C):
     r,c = order[i]
     od = Order(i,r,c,demand[i])
-    od.finish_time = finish_times[i] # sort by finish times of order
     all_orders.append(od)
     pq_orders.put( od ) # the order with least nb of types is on top of pq
