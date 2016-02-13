@@ -117,47 +117,48 @@ def deliver_drones():
                 dr.coord = order[o]
             dr.cargo[o] = {}
 
-def run():
-    while not pq_orders.empty(): # treat orders one by one
-        cmds = []
-        od = pq_orders.get() # satisfy order `od`
-        #~ print od.id
-        for p in xrange(P): # satisfy demand for product-p
-            if od.dmd[p]==0: continue
-            while od.dmd[p]>0:
-                w,nb = nearest_wh(od, p)
-                if nb<=0: print 'err: warehouse %d, nb=%d'%(w,nb)
-                while nb>0: 
-                    d, nb_i = nearest_drone(w, p, nb)
-                    if d!=-1 and nb_i<=0: print 'err: nbi=%d'%nb_i
-                    if d==-1: 
-                        deliver_drones()
-                    else: 
-                        dr = drones[d]
-                        dst = dist(dr.coord, warehouse[w])
-                        times[d] += (dst+1)
-                        nb -= nb_i
-                        od.dmd[p] -= nb_i
-                        stock[w][p] -= nb_i
-                        dr.cargo[od.id][p] = nb_i
-                        dr.load += nb_i*weight[p]
-                        dr.coord = warehouse[w]
-                        cmd = '%d L %d %d %d' % (d, w, p, nb_i) # load to drones
-                        od.cmds.append(cmd)
-                        cmds.append(cmd)
-            # satisfy demand for product-p
-        from random import random 
-        #~ if random() <= sum([1 if dr.load==0 else 0 for dr in drones])*1.0/D:
-        if random() <= ( sum([dr.load for dr in drones])*1.0 / (MaxLoad*D) )**0.5:
-            deliver_drones()
-        if max(times)>T : break 
-        commands.extend(cmds) 
-    score = sum( ceil( (T-od.finish_time)*100.0/T ) if T>=od.finish_time>=0 else 0 for od in all_orders)
-    return score
+#~ def run():
+while not pq_orders.empty(): # treat orders one by one
+    cmds = []
+    od = pq_orders.get() # satisfy order `od`
+    #~ print od.id
+    for p in xrange(P): # satisfy demand for product-p
+        if od.dmd[p]==0: continue
+        while od.dmd[p]>0:
+            w,nb = nearest_wh(od, p)
+            if nb<=0: print 'err: warehouse %d, nb=%d'%(w,nb)
+            while nb>0: 
+                d, nb_i = nearest_drone(w, p, nb)
+                if d!=-1 and nb_i<=0: print 'err: nbi=%d'%nb_i
+                if d==-1: 
+                    deliver_drones()
+                else: 
+                    dr = drones[d]
+                    dst = dist(dr.coord, warehouse[w])
+                    times[d] += (dst+1)
+                    nb -= nb_i
+                    od.dmd[p] -= nb_i
+                    stock[w][p] -= nb_i
+                    dr.cargo[od.id][p] = nb_i
+                    dr.load += nb_i*weight[p]
+                    dr.coord = warehouse[w]
+                    cmd = '%d L %d %d %d' % (d, w, p, nb_i) # load to drones
+                    od.cmds.append(cmd)
+                    cmds.append(cmd)
+        # satisfy demand for product-p
+    from random import random 
+    #~ if random() <= sum([1 if dr.load==0 else 0 for dr in drones])*1.0/D:
+    if random() <= ( sum([dr.load for dr in drones])*1.0 / (MaxLoad*D) )**0.5:
+        deliver_drones()
+    if max(times)>T : break 
+    commands.extend(cmds) 
 
-commands = []
-s = run()
-print s
+score = sum( ceil( (T-od.finish_time)*100.0/T ) if T>=od.finish_time>=0 else 0 for od in all_orders)
+print score
+
+#~ commands = []
+#~ s = run()
+#~ print s
 print len(commands)
 for cmd in commands:
     print cmd
