@@ -81,9 +81,9 @@ def estimate_finishtime(od, min_ft):
     w, min_wh_dst = __nearest_wh(od)
     d, min_dr_dst = __nearest_dr(w)
     sum_dmd = sum(od.dmd)
-    max_cap = MaxLoad - min([dr.load for dr in drones])
     min_turns = sum_dmd/(MaxLoad*D) + 1
-    if min(times) + od.nb_types()*2*min_turns + min_wh_dst*(min_turns*2-1) + min_dr_dst > min_ft: 
+    min_dr_turns = sum_dmd/MaxLoad
+    if min(times) + od.nb_types()*2*min_dr_turns + min_wh_dst*(min_turns*2-1) + min_dr_dst > min_ft: 
         return 999999999
     # copy vars to restore states later on...
     _times = times[:] 
