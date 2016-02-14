@@ -123,10 +123,13 @@ def estimate_finishtime(od, min_ft):
     cmds = _cmds
     return res
 
+_orders = [od.id for od in sorted(all_orders)] 
+
 def next_order():
     min_finishtime = 999999999
     res = None
-    for od in all_orders:
+    for o in _orders: # for od in all_orders: 
+        od = all_orders[o]
         if od.finished()==True: continue
         ft = estimate_finishtime(od, min_finishtime)
         if ft < min_finishtime: 
@@ -138,7 +141,7 @@ for _ in xrange(C):
     cmds = []
     od, ft = next_order() # get the easiest order
     if ft>T: break
-    print od.id, ft
+    print _, od.id, ft
     for p in xrange(P): # satisfy demand for product-p
         if od.dmd[p]==0: continue
         while od.dmd[p]>0:
